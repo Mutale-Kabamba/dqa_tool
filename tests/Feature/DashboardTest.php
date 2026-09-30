@@ -31,6 +31,22 @@ class DashboardTest extends TestCase
         $response->assertSuccessful();
         $response->assertSee('Executive DQA Cockpit');
         $response->assertSee('Multi-Tier Filters');
+        $response->assertSee('All Projects');
+        $response->assertSee('All Years');
+        $response->assertSee('All Quarters');
+        $response->assertSee('All Months');
+    }
+
+    public function test_dashboard_filters_default_to_all_projects(): void
+    {
+        $this->actingAs($this->user);
+
+        Livewire::test(\App\Filament\Pages\Dashboard::class)
+            ->assertSet('filters.project_id', null)
+            ->assertSet('filters.period_year', null)
+            ->assertSet('filters.period_quarter', null)
+            ->assertSet('filters.period_month', null)
+            ->assertSee('All Projects');
     }
 
     public function test_dashboard_kpi_stats_widget(): void

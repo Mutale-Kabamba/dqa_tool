@@ -20,6 +20,11 @@ class Dashboard extends BaseDashboard
 
     protected static ?string $navigationLabel = 'Dashboard';
 
+    public function persistsFiltersInSession(): bool
+    {
+        return false;
+    }
+
     public function getColumns(): int | string | array
     {
         return 2;
@@ -56,17 +61,22 @@ class Dashboard extends BaseDashboard
                         Select::make('project_id')
                             ->label('Project')
                             ->placeholder('All Projects')
-                            ->options(Project::where('is_active', true)->pluck('name', 'id'))
-                            ->searchable(),
+                            ->selectablePlaceholder(true)
+                            ->default(null)
+                            ->options(Project::where('is_active', true)->pluck('name', 'id')),
 
                         Select::make('period_year')
                             ->label('Calendar Year')
                             ->placeholder('All Years')
+                            ->selectablePlaceholder(true)
+                            ->default(null)
                             ->options($years),
 
                         Select::make('period_quarter')
                             ->label('Quarter')
                             ->placeholder('All Quarters')
+                            ->selectablePlaceholder(true)
+                            ->default(null)
                             ->options([
                                 1 => 'Q1 (Jan - Mar)',
                                 2 => 'Q2 (Apr - Jun)',
@@ -77,6 +87,8 @@ class Dashboard extends BaseDashboard
                         Select::make('period_month')
                             ->label('Specific Month')
                             ->placeholder('All Months')
+                            ->selectablePlaceholder(true)
+                            ->default(null)
                             ->options([
                                 1 => 'January',
                                 2 => 'February',
