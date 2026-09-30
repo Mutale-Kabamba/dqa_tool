@@ -10,29 +10,34 @@
 
     @if (!empty($metrics['project']))
         @php
-            $statusColors = [
-                'GREEN' => 'bg-emerald-50 text-emerald-800 border-emerald-400 dark:bg-emerald-950 dark:text-emerald-200',
-                'YELLOW' => 'bg-amber-50 text-amber-800 border-amber-400 dark:bg-amber-950 dark:text-amber-200',
-                'ORANGE' => 'bg-orange-50 text-orange-800 border-orange-400 dark:bg-orange-950 dark:text-orange-200',
-                'RED' => 'bg-rose-50 text-rose-800 border-rose-400 dark:bg-rose-950 dark:text-rose-200',
-            ];
-            $badgeColors = [
-                'GREEN' => 'bg-emerald-600 text-white',
-                'YELLOW' => 'bg-amber-500 text-white',
-                'ORANGE' => 'bg-orange-600 text-white',
-                'RED' => 'bg-rose-600 text-white',
+            $statusStyles = [
+                'GREEN' => [
+                    'banner' => 'background-color: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0;',
+                    'badge' => 'background-color: #10b981; color: #ffffff; border: 1px solid #059669;',
+                ],
+                'YELLOW' => [
+                    'banner' => 'background-color: #fffbeb; color: #92400e; border: 1px solid #fde68a;',
+                    'badge' => 'background-color: #f59e0b; color: #ffffff; border: 1px solid #d97706;',
+                ],
+                'ORANGE' => [
+                    'banner' => 'background-color: #fff7ed; color: #9a3412; border: 1px solid #fed7aa;',
+                    'badge' => 'background-color: #f97316; color: #ffffff; border: 1px solid #ea580c;',
+                ],
+                'RED' => [
+                    'banner' => 'background-color: #fef2f2; color: #991b1b; border: 1px solid #fecdd3;',
+                    'badge' => 'background-color: #ef4444; color: #ffffff; border: 1px solid #dc2626;',
+                ],
             ];
             $status = $metrics['overall_status'];
-            $colorClass = $statusColors[$status] ?? $statusColors['RED'];
-            $badgeClass = $badgeColors[$status] ?? $badgeColors['RED'];
+            $theme = $statusStyles[$status] ?? $statusStyles['RED'];
         @endphp
 
         <!-- Project Executive Summary Banner -->
-        <div class="rounded-xl border p-6 {{ $colorClass }} shadow-sm mb-6 transition-all">
+        <div class="rounded-xl border p-6 shadow-sm mb-6 transition-all" style="{{ $theme['banner'] }}">
             <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div>
                     <div class="flex items-center gap-2">
-                        <span class="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-black/10 dark:bg-white/10">
+                        <span class="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider" style="background-color: rgba(0,0,0,0.08);">
                             {{ $metrics['project']->code }}
                         </span>
                         <h2 class="text-2xl font-black tracking-tight">{{ $metrics['project']->name }}</h2>
@@ -46,7 +51,7 @@
                         <div class="text-xs uppercase font-semibold opacity-75">Consolidated Status</div>
                         <div class="text-3xl font-extrabold font-mono">{{ $metrics['overall_score_pct'] }}%</div>
                     </div>
-                    <span class="px-4 py-2 rounded-xl text-sm font-black tracking-wider {{ $badgeClass }} shadow-sm">
+                    <span class="px-4 py-2 rounded-xl text-sm font-black tracking-wider uppercase shadow-sm" style="{{ $theme['badge'] }}">
                         {{ $status }}
                     </span>
                 </div>
@@ -101,10 +106,10 @@
                                 @foreach ($metrics['dimensions'] as $dim)
                                     @php
                                         $badgeStyle = match($dim['status']) {
-                                            'GREEN' => 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-600/20 dark:bg-emerald-950/60 dark:text-emerald-300',
-                                            'YELLOW' => 'bg-amber-50 text-amber-700 ring-1 ring-amber-600/20 dark:bg-amber-950/60 dark:text-amber-300',
-                                            'ORANGE' => 'bg-orange-50 text-orange-700 ring-1 ring-orange-600/20 dark:bg-orange-950/60 dark:text-orange-300',
-                                            default => 'bg-rose-50 text-rose-700 ring-1 ring-rose-600/20 dark:bg-rose-950/60 dark:text-rose-300',
+                                            'GREEN' => 'background-color: #dcfce7; color: #166534; border: 1px solid #86efac;',
+                                            'YELLOW' => 'background-color: #fef3c7; color: #92400e; border: 1px solid #fcd34d;',
+                                            'ORANGE' => 'background-color: #ffedd5; color: #9a3412; border: 1px solid #fdba74;',
+                                            default => 'background-color: #fee2e2; color: #991b1b; border: 1px solid #fca5a5;',
                                         };
                                     @endphp
                                     <tr class="hover:bg-gray-50/50 dark:hover:bg-gray-800/40 transition">
@@ -121,7 +126,7 @@
                                             {{ $dim['score_pct'] }}%
                                         </td>
                                         <td class="px-4 py-3 text-center">
-                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold {{ $badgeStyle }}">
+                                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold tracking-wider shadow-sm uppercase" style="{{ $badgeStyle }}">
                                                 {{ $dim['status'] }}
                                             </span>
                                         </td>
@@ -165,8 +170,8 @@
                             @endforeach
                         </div>
                     @else
-                        <div class="p-4 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 text-sm flex items-center gap-2">
-                            <x-heroicon-m-check-circle class="w-5 h-5 text-emerald-600 flex-shrink-0" />
+                        <div class="p-4 rounded-lg text-sm flex items-center gap-2" style="background-color: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0;">
+                            <x-heroicon-m-check-circle class="w-5 h-5 flex-shrink-0" style="color: #059669;" />
                             <span>No recurring priority areas flagged in this timeframe (all dimensions &ge; 85%).</span>
                         </div>
                     @endif

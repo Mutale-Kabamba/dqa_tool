@@ -323,10 +323,10 @@ class AuditResource extends Resource
                 Tables\Columns\TextColumn::make('overall_status')
                     ->label('Status')
                     ->badge()
-                    ->color(fn (string $state): string => match ($state) {
+                    ->color(fn (string $state): string | array => match ($state) {
                         'GREEN' => 'success',
                         'YELLOW' => 'warning',
-                        'ORANGE' => 'danger',
+                        'ORANGE' => \Filament\Support\Colors\Color::Orange,
                         'RED' => 'danger',
                         default => 'gray',
                     })
@@ -396,10 +396,10 @@ class AuditResource extends Resource
                         Infolists\Components\TextEntry::make('overall_status')
                             ->label('Overall Status')
                             ->badge()
-                            ->color(fn (string $state): string => match ($state) {
+                            ->color(fn (string $state): string | array => match ($state) {
                                 'GREEN' => 'success',
                                 'YELLOW' => 'warning',
-                                'ORANGE' => 'danger',
+                                'ORANGE' => \Filament\Support\Colors\Color::Orange,
                                 'RED' => 'danger',
                                 default => 'gray',
                             }),
@@ -423,10 +423,10 @@ class AuditResource extends Resource
                                 Infolists\Components\TextEntry::make('status')
                                     ->label('Status')
                                     ->badge()
-                                    ->color(fn (string $state): string => match ($state) {
+                                    ->color(fn (string $state): string | array => match ($state) {
                                         'GREEN' => 'success',
                                         'YELLOW' => 'warning',
-                                        'ORANGE' => 'danger',
+                                        'ORANGE' => \Filament\Support\Colors\Color::Orange,
                                         'RED' => 'danger',
                                         default => 'gray',
                                     }),

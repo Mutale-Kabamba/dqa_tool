@@ -87,10 +87,10 @@ class ProjectComparativeTableWidget extends BaseWidget
                         return $engine->computeStatus($compliant / $checked);
                     })
                     ->badge()
-                    ->color(fn (string $state): string => match ($state) {
+                    ->color(fn (string $state): string | array => match ($state) {
                         'GREEN' => 'success',
                         'YELLOW' => 'warning',
-                        'ORANGE' => 'danger',
+                        'ORANGE' => \Filament\Support\Colors\Color::Orange,
                         'RED' => 'danger',
                         default => 'gray',
                     })
