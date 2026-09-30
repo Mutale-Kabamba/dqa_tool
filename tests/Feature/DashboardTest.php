@@ -61,7 +61,9 @@ class DashboardTest extends TestCase
             ->assertSee('Overall Portfolio Health')
             ->assertSee('85.2%')
             ->assertSee('Status: GREEN')
-            ->assertSee('Critical Sites for Follow-up');
+            ->assertSee('Critical Sites for Follow-up')
+            ->assertSee('Facilities flagged Orange or Red (< 70%)')
+            ->assertSee('1');
     }
 
     public function test_dashboard_five_dimensions_scorecard_widget(): void

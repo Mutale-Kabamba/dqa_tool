@@ -237,7 +237,14 @@ class ConsolidatedProjectView extends Page implements HasForms, HasTable
         $overallScore = $totalChecked > 0 ? round($totalCompliant / $totalChecked, 4) : 0.0;
         $overallStatus = $engine->computeStatus($overallScore);
 
-        $criticalCount = (clone $auditsQuery)->whereIn('overall_status', ['ORANGE', 'RED'])->count();
+        $criticalCount = (clone $auditsQuery)
+            ->where(function ($q) {
+                $q->whereIn('overall_status', ['ORANGE', 'RED'])
+                    ->orWhereHas('dimensions', function ($dimQuery) {
+                        $dimQuery->whereIn('status', ['ORANGE', 'RED']);
+                    });
+            })
+            ->count();
 
         // 5-Dimension pooled breakdown
         $dimQuery = AuditDimension::query()

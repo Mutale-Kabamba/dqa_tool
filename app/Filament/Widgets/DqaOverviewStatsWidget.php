@@ -28,7 +28,12 @@ class DqaOverviewStatsWidget extends BaseWidget
         $overallStatus = $engine->computeStatus($overallScore);
 
         $criticalSitesCount = (clone $query)
-            ->whereIn('overall_status', ['ORANGE', 'RED'])
+            ->where(function ($q) {
+                $q->whereIn('overall_status', ['ORANGE', 'RED'])
+                    ->orWhereHas('dimensions', function ($dimQuery) {
+                        $dimQuery->whereIn('status', ['ORANGE', 'RED']);
+                    });
+            })
             ->count();
 
         $statusColors = [

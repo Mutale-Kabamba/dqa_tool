@@ -54,7 +54,9 @@ class ConsolidatedProjectViewTest extends TestCase
             ->assertSee('Validity')
             ->assertSee('Recurring Priority Areas')
             ->assertSee('Site-by-Site Verification Breakdown')
-            ->assertSee('Lusaka District - Site 1');
+            ->assertSee('Lusaka District - Site 1')
+            ->assertSee('Critical Sites (< 70%)')
+            ->assertSee('1');
     }
 
     public function test_csv_export_returns_streamed_file(): void
