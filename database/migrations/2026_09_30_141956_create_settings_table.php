@@ -13,6 +13,9 @@ return new class extends Migration
     {
         Schema::create('settings', function (Blueprint $table) {
             $table->id();
+            $table->decimal('green_threshold', 4, 2)->default(0.85);
+            $table->decimal('yellow_threshold', 4, 2)->default(0.70);
+            $table->decimal('orange_threshold', 4, 2)->default(0.55);
             $table->timestamps();
         });
     }
