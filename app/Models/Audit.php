@@ -50,4 +50,29 @@ class Audit extends Model
     {
         return $this->hasMany(AuditDimension::class);
     }
+
+    public function scopeFiltered($query, ?array $filters)
+    {
+        if (empty($filters)) {
+            return $query;
+        }
+
+        if (!empty($filters['project_id'])) {
+            $query->where('project_id', $filters['project_id']);
+        }
+
+        if (!empty($filters['period_year'])) {
+            $query->where('period_year', $filters['period_year']);
+        }
+
+        if (!empty($filters['period_quarter'])) {
+            $query->where('period_quarter', $filters['period_quarter']);
+        }
+
+        if (!empty($filters['period_month'])) {
+            $query->where('period_month', $filters['period_month']);
+        }
+
+        return $query;
+    }
 }

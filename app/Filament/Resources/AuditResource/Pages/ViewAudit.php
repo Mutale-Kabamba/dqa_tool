@@ -13,8 +13,14 @@ class ViewAudit extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
+            Actions\Action::make('pdf')
+                ->label('Download PDF Dossier')
+                ->icon('heroicon-o-document-arrow-down')
+                ->color('danger')
+                ->url(fn () => route('admin.audits.pdf', ['audit' => $this->record]))
+                ->openUrlInNewTab(),
             Actions\Action::make('print')
-                ->label('Print Dossier')
+                ->label('Print View')
                 ->icon('heroicon-o-printer')
                 ->color('gray')
                 ->extraAttributes(['onclick' => 'window.print(); return false;']),

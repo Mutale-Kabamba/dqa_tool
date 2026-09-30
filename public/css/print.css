@@ -1,0 +1,53 @@
+@media print {
+    /* Hide all web clutter */
+    aside,
+    nav,
+    header.fi-topbar,
+    .fi-sidebar,
+    .fi-topbar,
+    .fi-no,
+    .fi-btn,
+    button,
+    .fi-pagination,
+    .fi-ta-header-actions,
+    .fi-header-actions,
+    .fi-page-header-actions,
+    .fi-breadcrumbs {
+        display: none !important;
+    }
+
+    /* Expand main area */
+    body,
+    main,
+    .fi-main,
+    .fi-page,
+    .fi-body {
+        margin: 0 !important;
+        padding: 8px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        background: #ffffff !important;
+        color: #000000 !important;
+        box-shadow: none !important;
+    }
+
+    /* Retain background colors on badges and scorecard bars */
+    * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    /* Prevent awkward page breaks */
+    .fi-section,
+    .rounded-xl,
+    table,
+    tr {
+        page-break-inside: avoid;
+        box-shadow: none !important;
+    }
+
+    @page {
+        margin: 15mm;
+        size: A4 portrait;
+    }
+}
