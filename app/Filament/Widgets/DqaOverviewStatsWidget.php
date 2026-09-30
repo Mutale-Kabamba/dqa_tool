@@ -46,6 +46,11 @@ class DqaOverviewStatsWidget extends BaseWidget
         $statusColor = $statusColors[$overallStatus] ?? 'gray';
         $scorePct = number_format($overallScore * 100, 1) . '%';
 
+        $projectName = !empty($filters['project_id'])
+            ? \App\Models\Project::find($filters['project_id'])?->name
+            : null;
+        $scopeLabel = $projectName ?: 'All Projects';
+
         return [
             Stat::make('Total Audits Completed', number_format($totalAudits))
                 ->description('Field verification visits in scope')
@@ -58,12 +63,12 @@ class DqaOverviewStatsWidget extends BaseWidget
                 ->color('primary'),
 
             Stat::make('Overall Portfolio Health', $scorePct)
-                ->description("Status: {$overallStatus} (Pooled Average)")
+                ->description("Status: {$overallStatus} ({$scopeLabel})")
                 ->descriptionIcon('heroicon-m-shield-check')
                 ->color($statusColor),
 
             Stat::make('Critical Sites for Follow-up', number_format($criticalSitesCount))
-                ->description('Facilities flagged Orange or Red (< 70%)')
+                ->description('Flagged for Follow-up')
                 ->descriptionIcon('heroicon-m-exclamation-triangle')
                 ->color($criticalSitesCount > 0 ? 'danger' : 'success'),
         ];

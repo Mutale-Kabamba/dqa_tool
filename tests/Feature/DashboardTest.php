@@ -60,10 +60,16 @@ class DashboardTest extends TestCase
             ->assertSee('213 records found compliant')
             ->assertSee('Overall Portfolio Health')
             ->assertSee('85.2%')
-            ->assertSee('Status: GREEN')
+            ->assertSee('Status: GREEN (All Projects)')
             ->assertSee('Critical Sites for Follow-up')
-            ->assertSee('Facilities flagged Orange or Red (< 70%)')
+            ->assertSee('Flagged for Follow-up')
             ->assertSee('1');
+
+        $project = \App\Models\Project::where('code', 'SAMALANI-ANA')->first();
+
+        Livewire::test(DqaOverviewStatsWidget::class, ['filters' => ['project_id' => $project->id]])
+            ->assertSee('Status: GREEN (' . $project->name . ')')
+            ->assertSee('Flagged for Follow-up');
     }
 
     public function test_dashboard_five_dimensions_scorecard_widget(): void
