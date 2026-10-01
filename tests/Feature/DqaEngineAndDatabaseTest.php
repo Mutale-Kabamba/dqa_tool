@@ -44,8 +44,8 @@ class DqaEngineAndDatabaseTest extends TestCase
         $audit = Audit::with('dimensions')->where('audit_code', 'AUD-001')->first();
         $this->assertNotNull($audit);
         $this->assertEquals('Lusaka District - Site 1', $audit->site_name);
-        $this->assertEquals(250, $audit->overall_checked);
-        $this->assertEquals(213, $audit->overall_compliant);
+        $this->assertEquals(50, $audit->overall_checked);
+        $this->assertEquals(43, $audit->overall_compliant);
         $this->assertEquals('0.8520', (string) $audit->overall_score);
         $this->assertEquals('GREEN', $audit->overall_status);
         $this->assertEquals('Completeness, Timeliness', $audit->priority_areas);
@@ -72,8 +72,8 @@ class DqaEngineAndDatabaseTest extends TestCase
             'Completeness' => ['checked' => 10, 'compliant' => 6], // 60% -> Orange, flagged
         ]);
 
-        $this->assertEquals(20, $result['overall_checked']);
-        $this->assertEquals(16, $result['overall_compliant']);
+        $this->assertEquals(10, $result['overall_checked']);
+        $this->assertEquals(8, $result['overall_compliant']);
         $this->assertEquals(0.80, $result['overall_score']);
         $this->assertEquals('YELLOW', $result['overall_status']);
         $this->assertEquals('Completeness', $result['priority_areas']);

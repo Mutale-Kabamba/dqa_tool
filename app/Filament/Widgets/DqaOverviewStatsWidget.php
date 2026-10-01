@@ -23,7 +23,7 @@ class DqaOverviewStatsWidget extends BaseWidget
         $totalChecked = (int) (clone $query)->sum('overall_checked');
         $totalCompliant = (int) (clone $query)->sum('overall_compliant');
 
-        $overallScore = $totalChecked > 0 ? round($totalCompliant / $totalChecked, 4) : 0.0;
+        $overallScore = $totalAudits > 0 ? round((float) (clone $query)->avg('overall_score'), 4) : 0.0;
         $engine = new DqaEngineService();
         $overallStatus = $engine->computeStatus($overallScore);
 

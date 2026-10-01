@@ -30,5 +30,23 @@ class DatabaseSeeder extends Seeder
                 'password' => bcrypt('password'),
             ]
         );
+
+        // Seed Project Officer user
+        User::firstOrCreate(
+            ['email' => 'officer@dqa.local'],
+            [
+                'name' => 'J. Mwila (Project Officer)',
+                'password' => bcrypt('password'),
+            ]
+        );
+
+        // Seed Field Auditor user
+        User::firstOrCreate(
+            ['email' => 'auditor@dqa.local'],
+            [
+                'name' => 'J. Banda (Field Auditor)',
+                'password' => bcrypt('password'),
+            ]
+        );
     }
 }

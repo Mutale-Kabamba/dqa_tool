@@ -10,7 +10,7 @@ class AuditPdfController extends Controller
 {
     public function download(Audit $audit): Response
     {
-        $audit->load(['project', 'dimensions']);
+        $audit->load(['project', 'dimensions', 'actionItems']);
 
         $pdf = Pdf::loadView('pdf.audit-dossier', [
             'audit' => $audit,
@@ -23,7 +23,7 @@ class AuditPdfController extends Controller
 
     public function stream(Audit $audit): Response
     {
-        $audit->load(['project', 'dimensions']);
+        $audit->load(['project', 'dimensions', 'actionItems']);
 
         $pdf = Pdf::loadView('pdf.audit-dossier', [
             'audit' => $audit,

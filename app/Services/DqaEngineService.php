@@ -55,14 +55,17 @@ class DqaEngineService
 
     public function computeAuditTotals(array $dimensionsData): array
     {
-        $totalChecked = 0;
-        $totalCompliant = 0;
+        $checkedCounts = [];
+        $compliantCounts = [];
+        $scores = [];
         $priorityList = [];
         $dimensionRows = [];
 
         foreach ($dimensionsData as $dim => $counts) {
-            $checked = (int) ($counts['checked'] ?? $counts['checked_count'] ?? 0);
-            $compliant = (int) ($counts['compliant'] ?? $counts['compliant_count'] ?? 0);
+            $checked = max(0, (int) ($counts['checked'] ?? $counts['checked_count'] ?? 0));
+            $compliant = max(0, (int) ($counts['compliant'] ?? $counts['compliant_count'] ?? 0));
+            // Ensure compliant does not exceed checked
+            $compliant = min($compliant, $checked);
             $score = $checked > 0 ? round($compliant / $checked, 4) : 0.0;
             $status = $this->computeStatus($score);
 
@@ -70,8 +73,11 @@ class DqaEngineService
                 $priorityList[] = $dim;
             }
 
-            $totalChecked += $checked;
-            $totalCompliant += $compliant;
+            $checkedCounts[] = $checked;
+            $compliantCounts[] = $compliant;
+            if ($checked > 0) {
+                $scores[] = $score;
+            }
 
             $dimensionRows[] = [
                 'dimension_name'   => $dim,
@@ -82,16 +88,63 @@ class DqaEngineService
             ];
         }
 
-        $overallScore = $totalChecked > 0 ? round($totalCompliant / $totalChecked, 4) : 0.0;
+        // Unique records audited in the sampled visit (same records assessed across dimensions)
+        $uniqueRecordsChecked = !empty($checkedCounts) ? max($checkedCounts) : 0;
+        $overallScore = !empty($scores) ? round(array_sum($scores) / count($scores), 4) : 0.0;
+        $overallCompliant = (int) round($uniqueRecordsChecked * $overallScore);
         $overallStatus = $this->computeStatus($overallScore);
 
         return [
-            'overall_checked'   => $totalChecked,
-            'overall_compliant' => $totalCompliant,
+            'overall_checked'   => $uniqueRecordsChecked,
+            'overall_compliant' => $overallCompliant,
             'overall_score'     => $overallScore,
             'overall_status'    => $overallStatus,
             'priority_areas'    => implode(', ', $priorityList),
             'dimensions'        => $dimensionRows,
         ];
+    }
+
+    /**
+     * Batch recalculate all audits and their dimensions against the active RAG thresholds.
+     */
+    public function recalculateAllAudits(): int
+    {
+        $audits = \App\Models\Audit::with('dimensions')->get();
+        $count = 0;
+
+        foreach ($audits as $audit) {
+            $dimensionsData = [];
+            foreach ($audit->dimensions as $dim) {
+                $dimensionsData[$dim->dimension_name] = [
+                    'checked_count' => $dim->checked_count,
+                    'compliant_count' => $dim->compliant_count,
+                ];
+            }
+
+            if (!empty($dimensionsData)) {
+                $calculated = $this->computeAuditTotals($dimensionsData);
+
+                $audit->update([
+                    'overall_checked'   => $calculated['overall_checked'],
+                    'overall_compliant' => $calculated['overall_compliant'],
+                    'overall_score'     => $calculated['overall_score'],
+                    'overall_status'    => $calculated['overall_status'],
+                    'priority_areas'    => $calculated['priority_areas'],
+                ]);
+
+                foreach ($calculated['dimensions'] as $dimRow) {
+                    $audit->dimensions()
+                        ->where('dimension_name', $dimRow['dimension_name'])
+                        ->update([
+                            'score_percentage' => $dimRow['score_percentage'],
+                            'status'           => $dimRow['status'],
+                        ]);
+                }
+
+                $count++;
+            }
+        }
+
+        return $count;
     }
 }

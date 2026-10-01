@@ -82,8 +82,8 @@ class AuditResource extends Resource
                             }),
 
                         Forms\Components\TextInput::make('facility_in_charge')
-                            ->label('Facility In-Charge Name')
-                            ->placeholder('e.g., Sister M. Phiri')
+                            ->label('Project Officer')
+                            ->placeholder('e.g., J. Mwila (Project Officer)')
                             ->maxLength(255),
 
                         // Hidden/Auto-calculated temporal fields
@@ -133,6 +133,14 @@ class AuditResource extends Resource
                                     ->minValue(0)
                                     ->default(0)
                                     ->required()
+                                    ->rules([
+                                        fn (Forms\Get $get): \Closure => function (string $attribute, $value, \Closure $fail) use ($get) {
+                                            $checked = (int) ($get('checked_count') ?? 0);
+                                            if ((int) $value > $checked) {
+                                                $fail("Compliant records ({$value}) cannot exceed records checked ({$checked}).");
+                                            }
+                                        },
+                                    ])
                                     ->live(debounce: 400)
                                     ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set) {
                                         static::recalculateDimensionAndTotals($get, $set);
@@ -166,22 +174,34 @@ class AuditResource extends Resource
                                 $status = $get('overall_status') ?? 'RED';
                                 $priorities = $get('priority_areas') ?? 'None';
 
-                                $statusColors = [
-                                    'GREEN' => 'bg-emerald-50 text-emerald-800 border-emerald-400 dark:bg-emerald-950 dark:text-emerald-200',
-                                    'YELLOW' => 'bg-amber-50 text-amber-800 border-amber-400 dark:bg-amber-950 dark:text-amber-200',
-                                    'ORANGE' => 'bg-orange-50 text-orange-800 border-orange-400 dark:bg-orange-950 dark:text-orange-200',
-                                    'RED' => 'bg-rose-50 text-rose-800 border-rose-400 dark:bg-rose-950 dark:text-rose-200',
+                                $themes = [
+                                    'GREEN' => [
+                                        'container' => 'background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border: 1.5px solid #86efac; color: #14532d;',
+                                        'card'      => 'background: rgba(255, 255, 255, 0.85); border: 1px solid #bbf7d0; color: #14532d;',
+                                        'badge'     => 'background-color: #15803d; color: #ffffff; border: 1px solid #166534; box-shadow: 0 2px 8px rgba(21, 128, 61, 0.35);',
+                                        'label'     => 'color: #166534;',
+                                    ],
+                                    'YELLOW' => [
+                                        'container' => 'background: linear-gradient(135deg, #fefce8 0%, #fef3c7 100%); border: 1.5px solid #fde047; color: #713f12;',
+                                        'card'      => 'background: rgba(255, 255, 255, 0.85); border: 1px solid #fef08a; color: #713f12;',
+                                        'badge'     => 'background-color: #d97706; color: #ffffff; border: 1px solid #b45309; box-shadow: 0 2px 8px rgba(217, 119, 6, 0.35);',
+                                        'label'     => 'color: #854d0e;',
+                                    ],
+                                    'ORANGE' => [
+                                        'container' => 'background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%); border: 1.5px solid #fdba74; color: #7c2d12;',
+                                        'card'      => 'background: rgba(255, 255, 255, 0.85); border: 1px solid #fed7aa; color: #7c2d12;',
+                                        'badge'     => 'background-color: #ea580c; color: #ffffff; border: 1px solid #c2410c; box-shadow: 0 2px 8px rgba(234, 88, 12, 0.35);',
+                                        'label'     => 'color: #9a3412;',
+                                    ],
+                                    'RED' => [
+                                        'container' => 'background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); border: 1.5px solid #fca5a5; color: #7f1d1d;',
+                                        'card'      => 'background: rgba(255, 255, 255, 0.85); border: 1px solid #fecdd3; color: #7f1d1d;',
+                                        'badge'     => 'background-color: #dc2626; color: #ffffff; border: 1px solid #b91c1c; box-shadow: 0 2px 8px rgba(220, 38, 38, 0.35);',
+                                        'label'     => 'color: #991b1b;',
+                                    ],
                                 ];
 
-                                $badgeColors = [
-                                    'GREEN' => 'bg-emerald-600 text-white',
-                                    'YELLOW' => 'bg-amber-500 text-white',
-                                    'ORANGE' => 'bg-orange-600 text-white',
-                                    'RED' => 'bg-rose-600 text-white',
-                                ];
-
-                                $colorClass = $statusColors[$status] ?? $statusColors['RED'];
-                                $badgeClass = $badgeColors[$status] ?? $badgeColors['RED'];
+                                $t = $themes[$status] ?? $themes['RED'];
                                 $pct = number_format($score * 100, 1);
 
                                 // Check for escalation if any dimension is below 70%
@@ -200,11 +220,12 @@ class AuditResource extends Resource
                                 if (!empty($criticalDims)) {
                                     $escalationList = htmlspecialchars(implode(', ', $criticalDims));
                                     $escalationHtml = "
-                                        <div class='mt-3 p-3 bg-red-100 border border-red-300 text-red-800 rounded-md text-sm font-medium flex items-center gap-2'>
-                                            <svg class='w-5 h-5 flex-shrink-0 text-red-600' fill='currentColor' viewBox='0 0 20 20'>
-                                                <path fill-rule='evenodd' d='M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z' clip-rule='evenodd' />
-                                            </svg>
-                                            <span><strong>Escalation Alert:</strong> Significant improvement required on: <strong>{$escalationList}</strong></span>
+                                        <div style='margin-top: 14px; padding: 12px 16px; background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%); border: 1.5px solid #f43f5e; color: #881337; border-radius: 8px; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 10px; box-shadow: 0 1px 3px rgba(244, 63, 94, 0.15);'>
+                                            <span style='display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; background-color: #e11d48; color: #ffffff; font-weight: bold; font-size: 14px; flex-shrink: 0;'>!</span>
+                                            <div>
+                                                <strong style='color: #9f1239; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;'>Escalation Alert:</strong>
+                                                <span style='margin-left: 4px;'>Significant programmatic remediation required on: <strong>{$escalationList}</strong> (&lt; 70% compliance threshold).</span>
+                                            </div>
                                         </div>
                                     ";
                                 }
@@ -214,39 +235,57 @@ class AuditResource extends Resource
                                     foreach (explode(',', $priorities) as $p) {
                                         $p = trim($p);
                                         if ($p) {
-                                            $priorityBadges .= "<span class='px-2.5 py-1 text-xs font-semibold rounded-full bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200 border border-orange-300'>{$p}</span> ";
+                                            $priorityBadges .= "<span style='display: inline-block; padding: 3px 10px; font-size: 11px; font-weight: 700; border-radius: 9999px; background: #ffedd5; color: #9a3412; border: 1px solid #fdba74; margin-right: 6px;'>{$p}</span>";
                                         }
                                     }
                                 } else {
-                                    $priorityBadges = "<span class='text-sm text-gray-500 italic'>All dimensions meeting or exceeding 85% benchmark</span>";
+                                    $priorityBadges = "<span style='font-size: 12px; color: #059669; font-style: italic; font-weight: 600;'>&check; All dimensions meeting or exceeding 85% national benchmark</span>";
                                 }
 
                                 return new HtmlString("
-                                    <div class='rounded-xl border p-5 {$colorClass} shadow-sm transition-all'>
-                                        <div class='grid grid-cols-1 md:grid-cols-4 gap-4 items-center'>
-                                            <div>
-                                                <div class='text-xs uppercase tracking-wider font-semibold opacity-75'>Total Checked</div>
-                                                <div class='text-2xl font-bold font-mono'>{$checked}</div>
+                                    <div style='border-radius: 12px; padding: 20px; {$t['container']} box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05); font-family: inherit;'>
+                                        <!-- Top Summary Cards Grid -->
+                                        <div style='display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 16px;'>
+                                            
+                                            <!-- Card 1: Total Checked -->
+                                            <div style='border-radius: 10px; padding: 14px 16px; {$t['card']} box-shadow: 0 1px 3px rgba(0,0,0,0.04);'>
+                                                <div style='font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; opacity: 0.85; {$t['label']}'>Total Checked</div>
+                                                <div style='font-size: 26px; font-weight: 900; font-family: monospace; margin-top: 4px; line-height: 1.1;'>{$checked}</div>
+                                                <div style='font-size: 11px; opacity: 0.7; margin-top: 2px;'>Sampled Records</div>
                                             </div>
-                                            <div>
-                                                <div class='text-xs uppercase tracking-wider font-semibold opacity-75'>Total Compliant</div>
-                                                <div class='text-2xl font-bold font-mono'>{$compliant}</div>
+
+                                            <!-- Card 2: Total Compliant -->
+                                            <div style='border-radius: 10px; padding: 14px 16px; {$t['card']} box-shadow: 0 1px 3px rgba(0,0,0,0.04);'>
+                                                <div style='font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; opacity: 0.85; {$t['label']}'>Total Compliant</div>
+                                                <div style='font-size: 26px; font-weight: 900; font-family: monospace; margin-top: 4px; line-height: 1.1;'>{$compliant}</div>
+                                                <div style='font-size: 11px; opacity: 0.7; margin-top: 2px;'>Conforming Records</div>
                                             </div>
-                                            <div>
-                                                <div class='text-xs uppercase tracking-wider font-semibold opacity-75'>Overall Score</div>
-                                                <div class='text-3xl font-extrabold font-mono tracking-tight'>{$pct}%</div>
+
+                                            <!-- Card 3: Overall Score -->
+                                            <div style='border-radius: 10px; padding: 14px 16px; {$t['card']} box-shadow: 0 1px 3px rgba(0,0,0,0.04);'>
+                                                <div style='font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; opacity: 0.85; {$t['label']}'>Overall Quality Score</div>
+                                                <div style='font-size: 28px; font-weight: 900; font-family: monospace; margin-top: 4px; line-height: 1.1;'>{$pct}%</div>
+                                                <div style='font-size: 11px; opacity: 0.7; margin-top: 2px;'>Pooled Compliance</div>
                                             </div>
-                                            <div>
-                                                <div class='text-xs uppercase tracking-wider font-semibold opacity-75'>Audit Health Status</div>
-                                                <span class='inline-block mt-1 px-3 py-1 rounded-full text-xs font-bold tracking-wider {$badgeClass} shadow-sm'>
-                                                    {$status}
-                                                </span>
+
+                                            <!-- Card 4: Health Status -->
+                                            <div style='border-radius: 10px; padding: 14px 16px; {$t['card']} box-shadow: 0 1px 3px rgba(0,0,0,0.04); display: flex; flex-direction: column; justify-content: space-between;'>
+                                                <div style='font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; opacity: 0.85; {$t['label']}'>Audit Health Status</div>
+                                                <div>
+                                                    <span style='display: inline-block; padding: 6px 16px; border-radius: 9999px; font-size: 13px; font-weight: 900; letter-spacing: 0.8px; text-transform: uppercase; {$t['badge']}'>
+                                                        {$status}
+                                                    </span>
+                                                </div>
                                             </div>
+
                                         </div>
-                                        <div class='mt-4 pt-4 border-t border-current/20 flex flex-wrap items-center gap-2'>
-                                            <span class='text-xs uppercase font-bold tracking-wider'>Priority Areas (&lt; 85%):</span>
+
+                                        <!-- Priority Areas Footer -->
+                                        <div style='padding-top: 14px; border-top: 1px solid rgba(0, 0, 0, 0.12); display: flex; align-items: center; flex-wrap: wrap; gap: 8px;'>
+                                            <span style='font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.6px; opacity: 0.9;'>Priority Action Focus (&lt; 85%):</span>
                                             {$priorityBadges}
                                         </div>
+
                                         {$escalationHtml}
                                     </div>
                                 ");
@@ -262,7 +301,7 @@ class AuditResource extends Resource
 
                 // SECTION D: QUALITATIVE FEEDBACK & FIELD NOTES
                 Forms\Components\Section::make('Section D: Qualitative Feedback & Field Notes')
-                    ->description('Expert observations, operational root causes, and agreed corrective action plans')
+                    ->description('Expert observations, operational root causes, and general notes')
                     ->schema([
                         Forms\Components\Textarea::make('root_cause_notes')
                             ->label('Operational Context & Root Causes')
@@ -271,11 +310,89 @@ class AuditResource extends Resource
                             ->columnSpanFull(),
 
                         Forms\Components\Textarea::make('recommendations')
-                            ->label('Actionable Recommendations & Agreed Facility Next Steps')
+                            ->label('General Actionable Recommendations & Agreed Facility Next Steps')
                             ->placeholder('e.g., Facility in-charge agreed to assign a dedicated intake officer by February 15...')
                             ->rows(3)
                             ->columnSpanFull(),
                     ])->columns(2),
+
+                // SECTION E: STRUCTURED ACTION PLAN & CAPA ITEMS
+                Forms\Components\Section::make('Section E: Corrective & Preventive Action (CAPA) Plan')
+                    ->description('Track specific remediation tasks, root cause categories, responsible officers, and target resolution dates')
+                    ->schema([
+                        Forms\Components\Repeater::make('actionItems')
+                            ->relationship('actionItems')
+                            ->label('Action Items / CAPA Tasks')
+                            ->schema([
+                                Forms\Components\Select::make('dimension_name')
+                                    ->label('Dimension / Area')
+                                    ->options([
+                                        'Accuracy' => 'Accuracy',
+                                        'Completeness' => 'Completeness',
+                                        'Consistency' => 'Consistency',
+                                        'Timeliness' => 'Timeliness',
+                                        'Validity' => 'Validity',
+                                        'Cross-Cutting / General' => 'Cross-Cutting / General',
+                                    ])
+                                    ->required(),
+
+                                Forms\Components\Select::make('root_cause_category')
+                                    ->label('Root Cause Category')
+                                    ->options([
+                                        'Staffing Shortage' => 'Staffing Shortage',
+                                        'Tools & Registers Stockout' => 'Tools & Registers Stockout',
+                                        'Training & Mentorship Need' => 'Training & Mentorship Need',
+                                        'EHR & Connectivity Glitch' => 'EHR & Connectivity Glitch',
+                                        'SOP Non-Adherence' => 'SOP Non-Adherence',
+                                        'Supervision Gap' => 'Supervision Gap',
+                                        'Other' => 'Other',
+                                    ])
+                                    ->default('Staffing Shortage')
+                                    ->required(),
+
+                                Forms\Components\TextInput::make('issue_description')
+                                    ->label('Identified Problem / Gap')
+                                    ->placeholder('e.g. 17 register entries had missing batch numbers')
+                                    ->required()
+                                    ->columnSpan(2),
+
+                                Forms\Components\TextInput::make('action_plan')
+                                    ->label('Corrective Action to Take')
+                                    ->placeholder('e.g. Conduct reconciliation and register restock by end of week')
+                                    ->required()
+                                    ->columnSpan(2),
+
+                                Forms\Components\TextInput::make('responsible_person')
+                                    ->label('Person Responsible')
+                                    ->placeholder('e.g. Nurse In-Charge')
+                                    ->required(),
+
+                                Forms\Components\DatePicker::make('due_date')
+                                    ->label('Target Date')
+                                    ->default(now()->addWeeks(2))
+                                    ->required(),
+
+                                Forms\Components\Select::make('status')
+                                    ->label('Status')
+                                    ->options([
+                                        'OPEN' => 'Open',
+                                        'IN_PROGRESS' => 'In Progress',
+                                        'RESOLVED' => 'Resolved',
+                                        'OVERDUE' => 'Overdue',
+                                    ])
+                                    ->default('OPEN')
+                                    ->required(),
+
+                                Forms\Components\TextInput::make('resolution_notes')
+                                    ->label('Resolution / Follow-up Notes')
+                                    ->placeholder('e.g. Verified resolved on Feb 12 follow-up visit')
+                                    ->columnSpan(3),
+                            ])
+                            ->columns(4)
+                            ->defaultItems(0)
+                            ->addActionLabel('+ Add CAPA Action Item')
+                            ->columnSpanFull(),
+                    ]),
             ]);
     }
 
@@ -359,15 +476,19 @@ class AuditResource extends Resource
                     ->options(fn () => Audit::query()->distinct()->pluck('period_year', 'period_year')->toArray()),
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
-                Tables\Actions\Action::make('pdf')
-                    ->label('PDF')
-                    ->icon('heroicon-o-document-arrow-down')
-                    ->color('danger')
-                    ->url(fn (Audit $record) => route('admin.audits.pdf', ['audit' => $record]))
-                    ->openUrlInNewTab(),
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                Tables\Actions\ActionGroup::make([
+                    Tables\Actions\ViewAction::make(),
+                    Tables\Actions\Action::make('pdf')
+                        ->label('PDF Dossier')
+                        ->icon('heroicon-o-document-arrow-down')
+                        ->color('danger')
+                        ->url(fn (Audit $record) => route('admin.audits.pdf', ['audit' => $record]))
+                        ->openUrlInNewTab(),
+                    Tables\Actions\EditAction::make(),
+                    Tables\Actions\DeleteAction::make(),
+                ])
+                ->tooltip('Actions')
+                ->icon('heroicon-m-ellipsis-vertical'),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -387,7 +508,7 @@ class AuditResource extends Resource
                         Infolists\Components\TextEntry::make('site_name')->label('Facility / Site'),
                         Infolists\Components\TextEntry::make('auditor_name')->label('Auditor'),
                         Infolists\Components\TextEntry::make('audit_date')->label('Audit Date')->date('M j, Y'),
-                        Infolists\Components\TextEntry::make('facility_in_charge')->label('Facility In-Charge')->placeholder('Not recorded'),
+                        Infolists\Components\TextEntry::make('facility_in_charge')->label('Project Officer')->placeholder('Not recorded'),
                         Infolists\Components\TextEntry::make('period_label')->label('Reporting Period')->badge(),
                         Infolists\Components\TextEntry::make('overall_score')
                             ->label('Overall Score')
@@ -435,7 +556,7 @@ class AuditResource extends Resource
                             ->columnSpanFull(),
                     ]),
 
-                Infolists\Components\Section::make('Field Notes & Recommendations')
+                Infolists\Components\Section::make('Field Notes & Observations')
                     ->schema([
                         Infolists\Components\TextEntry::make('root_cause_notes')
                             ->label('Operational Context & Root Causes')
@@ -443,8 +564,34 @@ class AuditResource extends Resource
                             ->columnSpanFull(),
 
                         Infolists\Components\TextEntry::make('recommendations')
-                            ->label('Actionable Recommendations & Agreed Next Steps')
-                            ->placeholder('No recommendations entered')
+                            ->label('General Next Steps')
+                            ->placeholder('No general recommendations entered')
+                            ->columnSpanFull(),
+                    ]),
+
+                Infolists\Components\Section::make('Corrective & Preventive Action (CAPA) Plan')
+                    ->schema([
+                        Infolists\Components\RepeatableEntry::make('actionItems')
+                            ->label('Remediation Action Items')
+                            ->schema([
+                                Infolists\Components\TextEntry::make('dimension_name')->label('Dimension / Area')->badge()->color('info'),
+                                Infolists\Components\TextEntry::make('root_cause_category')->label('Root Cause')->weight(FontWeight::SemiBold),
+                                Infolists\Components\TextEntry::make('issue_description')->label('Identified Problem')->columnSpan(2),
+                                Infolists\Components\TextEntry::make('action_plan')->label('Corrective Action')->columnSpan(2),
+                                Infolists\Components\TextEntry::make('responsible_person')->label('Responsible Person'),
+                                Infolists\Components\TextEntry::make('due_date')->label('Due Date')->date('M j, Y'),
+                                Infolists\Components\TextEntry::make('status')
+                                    ->label('Status')
+                                    ->badge()
+                                    ->color(fn (string $state): string => match ($state) {
+                                        'RESOLVED' => 'success',
+                                        'IN_PROGRESS' => 'info',
+                                        'OVERDUE' => 'danger',
+                                        default => 'warning',
+                                    }),
+                                Infolists\Components\TextEntry::make('resolution_notes')->label('Resolution / Verification Notes')->placeholder('Pending resolution')->columnSpan(3),
+                            ])
+                            ->columns(4)
                             ->columnSpanFull(),
                     ]),
             ]);
@@ -464,8 +611,9 @@ class AuditResource extends Resource
 
         // Access repeater items from root
         $dimensions = $get('../../dimensions') ?? [];
-        $totalChecked = 0;
-        $totalCompliant = 0;
+        $checkedCounts = [];
+        $compliantCounts = [];
+        $scores = [];
         $priorities = [];
 
         foreach ($dimensions as $item) {
@@ -479,15 +627,20 @@ class AuditResource extends Resource
                 }
             }
 
-            $totalChecked += $c;
-            $totalCompliant += $comp;
+            $checkedCounts[] = $c;
+            $compliantCounts[] = $comp;
+            if ($c > 0) {
+                $scores[] = $s;
+            }
         }
 
-        $overallScore = $totalChecked > 0 ? round($totalCompliant / $totalChecked, 4) : 0.0;
+        $uniqueRecordsChecked = !empty($checkedCounts) ? max($checkedCounts) : 0;
+        $overallScore = !empty($scores) ? round(array_sum($scores) / count($scores), 4) : 0.0;
+        $overallCompliant = (int) round($uniqueRecordsChecked * $overallScore);
         $overallStatus = $engine->computeStatus($overallScore);
 
-        $set('../../overall_checked', $totalChecked);
-        $set('../../overall_compliant', $totalCompliant);
+        $set('../../overall_checked', $uniqueRecordsChecked);
+        $set('../../overall_compliant', $overallCompliant);
         $set('../../overall_score', $overallScore);
         $set('../../overall_status', $overallStatus);
         $set('../../priority_areas', implode(', ', array_unique($priorities)));

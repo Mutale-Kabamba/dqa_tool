@@ -234,7 +234,7 @@ class ConsolidatedProjectView extends Page implements HasForms, HasTable
         $totalVisits = (clone $auditsQuery)->count();
         $totalChecked = (int) (clone $auditsQuery)->sum('overall_checked');
         $totalCompliant = (int) (clone $auditsQuery)->sum('overall_compliant');
-        $overallScore = $totalChecked > 0 ? round($totalCompliant / $totalChecked, 4) : 0.0;
+        $overallScore = $totalVisits > 0 ? round((float) (clone $auditsQuery)->avg('overall_score'), 4) : 0.0;
         $overallStatus = $engine->computeStatus($overallScore);
 
         $criticalCount = (clone $auditsQuery)
@@ -316,6 +316,66 @@ class ConsolidatedProjectView extends Page implements HasForms, HasTable
 
         usort($recurringPriorities, fn ($a, $b) => $b['count'] <=> $a['count']);
 
+        // Facility Longitudinal Quality Trajectory (Site Historical Progress)
+        $facilityAudits = (clone $auditsQuery)
+            ->with('dimensions')
+            ->orderBy('audit_date', 'asc')
+            ->get()
+            ->groupBy('site_name');
+
+        $facilityTrajectories = [];
+        foreach ($facilityAudits as $siteName => $siteRecords) {
+            $sorted = $siteRecords->sortBy('audit_date')->values();
+            $count = $sorted->count();
+            $latest = $sorted->last();
+            $prev = $count > 1 ? $sorted[$count - 2] : null;
+
+            $latestScore = (float) $latest->overall_score;
+            $prevScore = $prev ? (float) $prev->overall_score : null;
+            $delta = $prevScore !== null ? round(($latestScore - $prevScore) * 100, 1) : 0.0;
+
+            $trend = 'new';
+            if ($prevScore !== null) {
+                if ($delta > 0.5) {
+                    $trend = 'improving';
+                } elseif ($delta < -0.5) {
+                    $trend = 'deteriorating';
+                } else {
+                    $trend = 'stable';
+                }
+            }
+
+            $history = $sorted->map(fn ($rec) => [
+                'period' => $rec->period_label,
+                'score_pct' => number_format(((float) $rec->overall_score) * 100, 1),
+                'status' => $rec->overall_status,
+                'audit_code' => $rec->audit_code,
+            ])->toArray();
+
+            $facilityTrajectories[] = [
+                'site_name' => $siteName,
+                'audit_count' => $count,
+                'latest_period' => $latest->period_label,
+                'latest_score_pct' => number_format($latestScore * 100, 1),
+                'latest_status' => $latest->overall_status,
+                'prev_score_pct' => $prevScore !== null ? number_format($prevScore * 100, 1) : null,
+                'delta' => $delta,
+                'trend' => $trend,
+                'history' => $history,
+            ];
+        }
+
+        // CAPA Action Items Summary
+        $auditIds = (clone $auditsQuery)->pluck('id');
+        $capaItems = \App\Models\AuditActionItem::whereIn('audit_id', $auditIds)->get();
+        $capaSummary = [
+            'total'       => $capaItems->count(),
+            'open'        => $capaItems->where('status', 'OPEN')->count(),
+            'in_progress' => $capaItems->where('status', 'IN_PROGRESS')->count(),
+            'resolved'    => $capaItems->where('status', 'RESOLVED')->count(),
+            'overdue'     => $capaItems->where('effective_status', 'OVERDUE')->count(),
+        ];
+
         return [
             'project' => $project,
             'total_visits' => $totalVisits,
@@ -327,6 +387,8 @@ class ConsolidatedProjectView extends Page implements HasForms, HasTable
             'critical_count' => $criticalCount,
             'dimensions' => $dimensions,
             'recurring_priorities' => $recurringPriorities,
+            'facility_trajectories' => $facilityTrajectories,
+            'capa_summary' => $capaSummary,
         ];
     }
 
@@ -388,7 +450,7 @@ class ConsolidatedProjectView extends Page implements HasForms, HasTable
                 'Overall Score (%)',
                 'Overall Status',
                 'Priority Areas',
-                'Facility In-Charge',
+                'Project Officer',
                 'Root Cause Notes',
                 'Recommendations',
             ]);

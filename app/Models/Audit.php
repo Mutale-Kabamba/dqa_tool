@@ -51,6 +51,11 @@ class Audit extends Model
         return $this->hasMany(AuditDimension::class);
     }
 
+    public function actionItems(): HasMany
+    {
+        return $this->hasMany(AuditActionItem::class);
+    }
+
     public function scopeFiltered($query, ?array $filters)
     {
         if (empty($filters)) {

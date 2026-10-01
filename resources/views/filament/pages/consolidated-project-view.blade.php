@@ -178,6 +178,133 @@
                 </x-filament::section>
             </div>
         </div>
+
+        <!-- CAPA & Longitudinal Trajectory Row -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            <!-- CAPA Remediation Status -->
+            <div class="lg:col-span-1">
+                <x-filament::section>
+                    <x-slot name="heading">
+                        <div class="flex items-center gap-2">
+                            <x-heroicon-m-clipboard-document-list class="w-5 h-5 text-indigo-500" />
+                            <span>CAPA Action Plan Health</span>
+                        </div>
+                    </x-slot>
+                    <x-slot name="description">
+                        Status of remediation tasks across sites
+                    </x-slot>
+
+                    @php
+                        $capa = $metrics['capa_summary'] ?? ['total' => 0, 'open' => 0, 'in_progress' => 0, 'resolved' => 0, 'overdue' => 0];
+                    @endphp
+
+                    <div class="grid grid-cols-2 gap-3 mb-4">
+                        <div class="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                            <div class="text-xs uppercase text-gray-500 font-semibold">Total Actions</div>
+                            <div class="text-xl font-bold font-mono">{{ $capa['total'] }}</div>
+                        </div>
+                        <div class="p-3 bg-emerald-50 dark:bg-emerald-950/40 rounded-lg border border-emerald-200 dark:border-emerald-800">
+                            <div class="text-xs uppercase text-emerald-700 dark:text-emerald-300 font-semibold">Resolved</div>
+                            <div class="text-xl font-bold font-mono text-emerald-700 dark:text-emerald-300">{{ $capa['resolved'] }}</div>
+                        </div>
+                        <div class="p-3 bg-sky-50 dark:bg-sky-950/40 rounded-lg border border-sky-200 dark:border-sky-800">
+                            <div class="text-xs uppercase text-sky-700 dark:text-sky-300 font-semibold">In Progress</div>
+                            <div class="text-xl font-bold font-mono text-sky-700 dark:text-sky-300">{{ $capa['in_progress'] }}</div>
+                        </div>
+                        <div class="p-3 bg-amber-50 dark:bg-amber-950/40 rounded-lg border border-amber-200 dark:border-amber-800">
+                            <div class="text-xs uppercase text-amber-700 dark:text-amber-300 font-semibold">Open / Overdue</div>
+                            <div class="text-xl font-bold font-mono {{ $capa['overdue'] > 0 ? 'text-red-600' : 'text-amber-700 dark:text-amber-300' }}">
+                                {{ $capa['open'] }} <span class="text-xs font-normal text-red-500">({{ $capa['overdue'] }} overdue)</span>
+                            </div>
+                        </div>
+                    </div>
+                </x-filament::section>
+            </div>
+
+            <!-- Facility Longitudinal Quality Trajectory -->
+            <div class="lg:col-span-2">
+                <x-filament::section>
+                    <x-slot name="heading">
+                        <div class="flex items-center gap-2">
+                            <x-heroicon-m-arrow-trending-up class="w-5 h-5 text-emerald-500" />
+                            <span>Facility Longitudinal Quality Trajectory (Audit Trends)</span>
+                        </div>
+                    </x-slot>
+                    <x-slot name="description">
+                        Track progress trajectory and historical compliance evolution per health facility
+                    </x-slot>
+
+                    @if (!empty($metrics['facility_trajectories']))
+                        <div class="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-800">
+                            <table class="w-full text-left text-sm divide-y divide-gray-200 dark:divide-gray-800">
+                                <thead class="bg-gray-50 dark:bg-gray-900/60 text-xs uppercase font-semibold text-gray-600 dark:text-gray-400">
+                                    <tr>
+                                        <th class="px-4 py-3">Facility / Site</th>
+                                        <th class="px-4 py-3 text-center">Audits Conducted</th>
+                                        <th class="px-4 py-3 text-center">Latest Score</th>
+                                        <th class="px-4 py-3 text-center">Trajectory Trend</th>
+                                        <th class="px-4 py-3">Audit History Timeline</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100 dark:divide-gray-800/60 bg-white dark:bg-gray-900">
+                                    @foreach ($metrics['facility_trajectories'] as $traj)
+                                        <tr class="hover:bg-gray-50/50 dark:hover:bg-gray-800/40 transition">
+                                            <td class="px-4 py-3 font-semibold text-gray-900 dark:text-gray-100">
+                                                {{ $traj['site_name'] }}
+                                            </td>
+                                            <td class="px-4 py-3 text-center font-mono text-gray-600 dark:text-gray-400">
+                                                {{ $traj['audit_count'] }}
+                                            </td>
+                                            <td class="px-4 py-3 text-center">
+                                                <span class="font-bold font-mono text-gray-900 dark:text-gray-100">{{ $traj['latest_score_pct'] }}%</span>
+                                                <span class="text-xs text-gray-500 ml-1">({{ $traj['latest_period'] }})</span>
+                                            </td>
+                                            <td class="px-4 py-3 text-center">
+                                                @if ($traj['trend'] === 'improving')
+                                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200">
+                                                        <span>&uarr; +{{ $traj['delta'] }}%</span>
+                                                        <span class="font-normal text-[10px]">Improving</span>
+                                                    </span>
+                                                @elseif ($traj['trend'] === 'deteriorating')
+                                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-200">
+                                                        <span>&darr; {{ $traj['delta'] }}%</span>
+                                                        <span class="font-normal text-[10px]">Deteriorating</span>
+                                                    </span>
+                                                @elseif ($traj['trend'] === 'stable')
+                                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200">
+                                                        <span>&rarr; Stable</span>
+                                                    </span>
+                                                @else
+                                                    <span class="text-xs text-gray-400 italic">Baseline (1 Visit)</span>
+                                                @endif
+                                            </td>
+                                            <td class="px-4 py-3">
+                                                <div class="flex items-center gap-1.5 flex-wrap">
+                                                    @foreach ($traj['history'] as $h)
+                                                        @php
+                                                            $dotBg = match($h['status']) {
+                                                                'GREEN' => 'bg-emerald-600 text-white',
+                                                                'YELLOW' => 'bg-amber-500 text-white',
+                                                                'ORANGE' => 'bg-orange-600 text-white',
+                                                                default => 'bg-rose-600 text-white',
+                                                            };
+                                                        @endphp
+                                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-mono {{ $dotBg }}" title="{{ $h['audit_code'] }}: {{ $h['period'] }} - {{ $h['score_pct'] }}%">
+                                                            <span>{{ $h['period'] }}</span>
+                                                            <span class="font-bold">{{ $h['score_pct'] }}%</span>
+                                                        </span>
+                                                    @endforeach
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @endif
+                </x-filament::section>
+            </div>
+        </div>
     @endif
 
     <!-- Site-by-Site Table -->

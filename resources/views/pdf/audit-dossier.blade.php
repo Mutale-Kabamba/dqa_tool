@@ -284,7 +284,7 @@
                 <span class="meta-value">{{ $audit->auditor_name }}</span>
             </td>
             <td>
-                <span class="meta-label">Facility In-Charge</span>
+                <span class="meta-label">Project Officer</span>
                 <span class="meta-value">{{ $audit->facility_in_charge ?? 'Not Recorded' }}</span>
             </td>
             <td>
@@ -410,16 +410,44 @@
         @endif
     </div>
 
-    <div class="section-title">B. Actionable Recommendations & Agreed Corrective Plan</div>
+    <div class="section-title">B. Actionable Recommendations & Agreed Next Steps</div>
     <div class="notes-card">
         @if ($audit->recommendations)
             {{ $audit->recommendations }}
         @else
-            <em style="color: #94a3b8;">No immediate facility-level corrective action plan recorded. Regular routine monitoring continues.</em>
+            <em style="color: #94a3b8;">No general facility-level corrective action plan recorded. Routine monitoring continues.</em>
         @endif
     </div>
 
-    <div class="section-title">C. Benchmark Legend & Grading Scale Reference</div>
+    @if ($audit->actionItems && $audit->actionItems->isNotEmpty())
+        <div class="section-title">C. Corrective & Preventive Action (CAPA) Plan</div>
+        <table class="data-table" style="font-size: 9.5px; margin-bottom: 12px;">
+            <thead>
+                <tr>
+                    <th style="width: 14%;">Area</th>
+                    <th style="width: 16%;">Root Cause</th>
+                    <th style="width: 25%;">Identified Problem</th>
+                    <th style="width: 25%;">Action Plan</th>
+                    <th style="width: 10%;">Assigned</th>
+                    <th style="width: 10%;">Due Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach ($audit->actionItems as $item)
+                    <tr>
+                        <td><strong>{{ $item->dimension_name ?? 'General' }}</strong></td>
+                        <td>{{ $item->root_cause_category }}</td>
+                        <td>{{ $item->issue_description }}</td>
+                        <td>{{ $item->action_plan }}</td>
+                        <td>{{ $item->responsible_person }}</td>
+                        <td class="text-center font-mono">{{ $item->due_date ? $item->due_date->format('M j, Y') : '-' }}</td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    @endif
+
+    <div class="section-title">{{ ($audit->actionItems && $audit->actionItems->isNotEmpty()) ? 'D' : 'C' }}. Benchmark Legend & Grading Scale Reference</div>
     <table style="width: 100%; border-collapse: collapse; font-size: 9px; margin-bottom: 20px;">
         <tr>
             <td style="padding: 4px; width: 25%;">
@@ -465,10 +493,10 @@
             <td>
                 <div class="signature-box">
                     <div style="font-size: 10px; font-weight: bold; text-transform: uppercase; color: #1e293b;">
-                        Facility In-Charge Sign-Off
+                        Project Officer Sign-Off
                     </div>
                     <div style="font-size: 9px; color: #64748b; margin-top: 3px;">
-                        Name: <strong>{{ $audit->facility_in_charge ?? 'Facility Head / Designee' }}</strong>
+                        Name: <strong>{{ $audit->facility_in_charge ?? 'Project Officer / Designee' }}</strong>
                     </div>
                     <div class="signature-line">
                         <table style="width: 100%; font-size: 9px;">

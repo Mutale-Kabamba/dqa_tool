@@ -89,6 +89,22 @@ class SettingResource extends Resource
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\Action::make('recalculate')
+                    ->label('Recalculate Audits')
+                    ->icon('heroicon-o-arrow-path')
+                    ->color('warning')
+                    ->requiresConfirmation()
+                    ->modalHeading('Recalculate All Audit Scores')
+                    ->modalDescription('This will re-evaluate all historical audits and dimension scores using the active RAG benchmark thresholds. Do you wish to proceed?')
+                    ->action(function () {
+                        $engine = new \App\Services\DqaEngineService();
+                        $count = $engine->recalculateAllAudits();
+                        \Filament\Notifications\Notification::make()
+                            ->title('Audits Recalculated')
+                            ->body("Successfully re-evaluated {$count} audits against the updated thresholds.")
+                            ->success()
+                            ->send();
+                    }),
             ]);
     }
 
