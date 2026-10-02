@@ -29,6 +29,7 @@ class ProjectComparativeTableWidget extends BaseWidget
             ->query(
                 Project::query()
                     ->where('is_active', true)
+                    ->when(auth()->user() && ! auth()->user()->isMealOfficer() && auth()->user()->isProjectOfficer(), fn ($q) => $q->where('project_officer_id', auth()->id()))
                     ->when(!empty($filters['project_id']), fn ($q) => $q->where('id', $filters['project_id']))
             )
             ->columns([

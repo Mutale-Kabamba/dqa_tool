@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('audit_code', 50)->unique();
             $table->foreignId('project_id')->constrained('projects')->cascadeOnDelete();
             $table->string('site_name');
-            $table->string('auditor_name');
+            $table->string('auditor_name')->nullable();
             $table->date('audit_date');
             $table->unsignedTinyInteger('period_month'); // 1 - 12
             $table->unsignedTinyInteger('period_quarter'); // 1 - 4

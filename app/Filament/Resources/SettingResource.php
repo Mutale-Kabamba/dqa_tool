@@ -18,11 +18,16 @@ class SettingResource extends Resource
 
     protected static ?string $navigationGroup = 'System Administration';
 
-    protected static ?string $navigationLabel = 'RAG Thresholds';
+    protected static ?string $navigationLabel = 'RAG Thresholds & Settings';
 
     protected static ?string $modelLabel = 'RAG Threshold Setting';
 
-    protected static ?int $navigationSort = 99;
+    protected static ?int $navigationSort = 3;
+
+    public static function canViewAny(): bool
+    {
+        return auth()->user()?->isMealOfficer() ?? false;
+    }
 
     public static function form(Form $form): Form
     {

@@ -14,12 +14,18 @@ class Project extends Model
         'name',
         'code',
         'description',
+        'project_officer_id',
         'is_active',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
     ];
+
+    public function projectOfficer()
+    {
+        return $this->belongsTo(User::class, 'project_officer_id');
+    }
 
     public function audits(): HasMany
     {

@@ -12,6 +12,12 @@ class ListAudits extends ListRecords
 
     protected function getHeaderActions(): array
     {
+        $isMealOfficer = auth()->user()?->isMealOfficer() ?? false;
+
+        if (! $isMealOfficer) {
+            return [];
+        }
+
         return [
             Actions\Action::make('download_template')
                 ->label('CSV Template')

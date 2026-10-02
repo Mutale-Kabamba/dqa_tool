@@ -16,9 +16,37 @@ class ProjectResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-folder';
 
-    protected static ?string $navigationGroup = 'Program Management';
+    protected static ?string $navigationGroup = 'Portfolio & Sites';
+
+    protected static ?string $navigationLabel = 'Projects & Campaigns';
 
     protected static ?int $navigationSort = 1;
+
+    public static function canViewAny(): bool
+    {
+        $user = auth()->user();
+        return $user && ($user->isMealOfficer() || $user->isProjectOfficer());
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        $user = auth()->user();
+        if ($user && $user->isProjectOfficer() && ! $user->isMealOfficer()) {
+            return 'My Assigned Projects';
+        }
+
+        return 'Projects & Campaigns';
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        $user = auth()->user();
+        if ($user && $user->isProjectOfficer() && ! $user->isMealOfficer()) {
+            return 'My Project Operations';
+        }
+
+        return 'Portfolio & Sites';
+    }
 
     public static function form(Form $form): Form
     {
@@ -40,14 +68,22 @@ class ProjectResource extends Resource
                             ->unique(ignoreRecord: true)
                             ->maxLength(50),
 
-                        Forms\Components\Textarea::make('description')
-                            ->label('Description & Objectives')
-                            ->rows(3)
-                            ->columnSpanFull(),
+                        Forms\Components\Select::make('project_officer_id')
+                            ->label('Designated Project Officer')
+                            ->relationship('projectOfficer', 'name', fn ($query) => $query->whereJsonContains('roles', \App\Models\User::ROLE_PROJECT_OFFICER)->orWhereJsonContains('roles', \App\Models\User::ROLE_MEAL_OFFICER))
+                            ->searchable()
+                            ->preload()
+                            ->helperText('Designates the Project Officer who submits data files, oversees performance, and responds to CAPA remediation.')
+                            ->nullable(),
 
                         Forms\Components\Toggle::make('is_active')
                             ->label('Active for Field Audits')
                             ->default(true),
+
+                        Forms\Components\Textarea::make('description')
+                            ->label('Description & Objectives')
+                            ->rows(3)
+                            ->columnSpanFull(),
                     ])->columns(2),
             ]);
     }
@@ -66,6 +102,15 @@ class ProjectResource extends Resource
                     ->label('Code')
                     ->badge()
                     ->color('info')
+                    ->searchable()
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('projectOfficer.name')
+                    ->label('Project Officer')
+                    ->placeholder('Unassigned')
+                    ->badge()
+                    ->color('primary')
+                    ->icon('heroicon-m-user')
                     ->searchable()
                     ->sortable(),
 
@@ -107,6 +152,18 @@ class ProjectResource extends Resource
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ]);
+    }
+
+    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        $query = parent::getEloquentQuery();
+        $user = auth()->user();
+
+        if ($user && ! $user->isMealOfficer() && $user->isProjectOfficer()) {
+            $query->where('project_officer_id', $user->id);
+        }
+
+        return $query;
     }
 
     public static function getRelations(): array

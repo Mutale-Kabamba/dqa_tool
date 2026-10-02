@@ -27,12 +27,24 @@ class DqaOverviewStatsWidget extends BaseWidget
         $engine = new DqaEngineService();
         $overallStatus = $engine->computeStatus($overallScore);
 
-        $criticalSitesCount = (clone $query)
+        $pendingDispatchCount = Audit::query()
             ->where(function ($q) {
-                $q->whereIn('overall_status', ['ORANGE', 'RED'])
-                    ->orWhereHas('dimensions', function ($dimQuery) {
-                        $dimQuery->whereIn('status', ['ORANGE', 'RED']);
-                    });
+                $q->where('workflow_status', Audit::STATUS_PENDING_ASSIGNMENT)
+                  ->orWhereNull('auditor_id');
+            })
+            ->count();
+
+        $openCapaCount = \App\Models\AuditActionItem::query()
+            ->whereIn('status', ['OPEN', 'IN_PROGRESS', 'OVERDUE'])
+            ->count();
+
+        $overdueCapaCount = \App\Models\AuditActionItem::query()
+            ->where(function ($q) {
+                $q->where('status', 'OVERDUE')
+                  ->orWhere(function ($q2) {
+                      $q2->whereIn('status', ['OPEN', 'IN_PROGRESS'])
+                         ->whereDate('due_date', '<', now());
+                  });
             })
             ->count();
 
@@ -52,25 +64,30 @@ class DqaOverviewStatsWidget extends BaseWidget
         $scopeLabel = $projectName ?: 'All Projects';
 
         return [
-            Stat::make('Total Audits Completed', number_format($totalAudits))
-                ->description('Field verification visits in scope')
+            Stat::make('Total Audits Conducted', number_format($totalAudits))
+                ->description('Verification visits in timeframe')
                 ->descriptionIcon('heroicon-m-clipboard-document-check')
                 ->color('info'),
 
             Stat::make('Cumulative Records Audited', number_format($totalChecked))
-                ->description(number_format($totalCompliant) . ' records found compliant')
+                ->description(number_format($totalCompliant) . ' records pooled compliant')
                 ->descriptionIcon('heroicon-m-document-magnifying-glass')
                 ->color('primary'),
 
-            Stat::make('Overall Portfolio Health', $scorePct)
-                ->description("Status: {$overallStatus} ({$scopeLabel})")
+            Stat::make('Portfolio Quality Index', $scorePct)
+                ->description("Composite Status: {$overallStatus} ({$scopeLabel})")
                 ->descriptionIcon('heroicon-m-shield-check')
                 ->color($statusColor),
 
-            Stat::make('Critical Sites for Follow-up', number_format($criticalSitesCount))
-                ->description('Flagged for Follow-up')
-                ->descriptionIcon('heroicon-m-exclamation-triangle')
-                ->color($criticalSitesCount > 0 ? 'danger' : 'success'),
+            Stat::make('Pending Dispatch', number_format($pendingDispatchCount))
+                ->description('Awaiting auditor assignment')
+                ->descriptionIcon('heroicon-m-paper-airplane')
+                ->color($pendingDispatchCount > 0 ? 'warning' : 'success'),
+
+            Stat::make('Active CAPA Actions', number_format($openCapaCount))
+                ->description($overdueCapaCount > 0 ? "{$overdueCapaCount} Overdue items requiring action" : 'All remediations on schedule')
+                ->descriptionIcon('heroicon-m-arrow-path-rounded-square')
+                ->color($overdueCapaCount > 0 ? 'danger' : ($openCapaCount > 0 ? 'warning' : 'success')),
         ];
     }
 }

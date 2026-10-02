@@ -12,6 +12,10 @@ class User extends Authenticatable implements FilamentUser
 {
     use HasFactory, Notifiable;
 
+    public const ROLE_MEAL_OFFICER = 'MEAL_OFFICER';
+    public const ROLE_PROJECT_OFFICER = 'PROJECT_OFFICER';
+    public const ROLE_AUDITOR = 'AUDITOR';
+
     /**
      * The attributes that are mass assignable.
      *
@@ -21,6 +25,8 @@ class User extends Authenticatable implements FilamentUser
         'name',
         'email',
         'password',
+        'roles',
+        'is_active',
     ];
 
     /**
@@ -38,7 +44,7 @@ class User extends Authenticatable implements FilamentUser
      */
     public function canAccessPanel(Panel $panel): bool
     {
-        return true;
+        return (bool) ($this->is_active ?? true);
     }
 
     /**
@@ -51,6 +57,42 @@ class User extends Authenticatable implements FilamentUser
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'roles' => 'array',
+            'is_active' => 'boolean',
         ];
+    }
+
+    public function hasRole(string $role): bool
+    {
+        if (empty($this->roles)) {
+            return false;
+        }
+
+        return in_array($role, (array) $this->roles, true);
+    }
+
+    public function isMealOfficer(): bool
+    {
+        return $this->hasRole(self::ROLE_MEAL_OFFICER);
+    }
+
+    public function isProjectOfficer(): bool
+    {
+        return $this->hasRole(self::ROLE_PROJECT_OFFICER);
+    }
+
+    public function isAuditor(): bool
+    {
+        return $this->hasRole(self::ROLE_AUDITOR);
+    }
+
+    public function managedProjects()
+    {
+        return $this->hasMany(Project::class, 'project_officer_id');
+    }
+
+    public function assignedAudits()
+    {
+        return $this->hasMany(Audit::class, 'auditor_id');
     }
 }

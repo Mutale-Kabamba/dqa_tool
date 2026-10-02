@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\Audit;
 use App\Models\AuditDimension;
 use App\Models\Project;
+use App\Models\User;
 use App\Services\DqaEngineService;
 use Illuminate\Database\Seeder;
 
@@ -20,6 +21,9 @@ class AuditSeeder extends Seeder
         if (! $project) {
             return;
         }
+
+        $auditor = User::where('email', 'auditor@dqa.local')->first();
+        $officer = User::where('email', 'officer@dqa.local')->first();
 
         $engine = new DqaEngineService();
 
@@ -37,8 +41,10 @@ class AuditSeeder extends Seeder
             ['audit_code' => 'AUD-001'],
             [
                 'project_id' => $project->id,
+                'auditor_id' => $auditor?->id,
+                'project_officer_id' => $officer?->id ?? $project->project_officer_id,
                 'site_name' => 'Lusaka District - Site 1',
-                'auditor_name' => 'J. Banda',
+                'auditor_name' => $auditor?->name ?? 'J. Banda',
                 'audit_date' => '2026-01-15',
                 'period_month' => 1,
                 'period_quarter' => 1,
@@ -51,7 +57,7 @@ class AuditSeeder extends Seeder
                 'priority_areas' => $calculated['priority_areas'],
                 'root_cause_notes' => 'Severe staffing shortage during January immunization campaign led to delayed register updates.',
                 'recommendations' => 'Facility in-charge agreed to assign a dedicated intake officer by February 15.',
-                'facility_in_charge' => 'Sister M. Phiri',
+                'facility_in_charge' => $officer?->name ?? 'J. Mwila (Project Officer)',
             ]
         );
 

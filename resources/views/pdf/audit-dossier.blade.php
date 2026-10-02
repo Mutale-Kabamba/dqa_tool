@@ -393,7 +393,7 @@
         <tr>
             <td style="width: 70%;">
                 <div class="brand-title">Light Data Quality Audit (DQA)</div>
-                <div class="brand-subtitle">Section 2: Qualitative Findings & Sign-Off Block</div>
+                <div class="brand-subtitle">Section 2: Qualitative Findings, CAPA & Certification</div>
             </td>
             <td style="width: 30%; text-align: right;">
                 <div class="audit-badge">{{ $audit->audit_code }}</div>
@@ -410,7 +410,25 @@
         @endif
     </div>
 
-    <div class="section-title">B. Actionable Recommendations & Agreed Next Steps</div>
+    <div class="section-title">B. Operational Strengths Observed & Positive Practices</div>
+    <div class="notes-card">
+        @if ($audit->strengths_notes)
+            {{ $audit->strengths_notes }}
+        @else
+            <em style="color: #94a3b8;">No specific qualitative operational strengths noted.</em>
+        @endif
+    </div>
+
+    <div class="section-title">C. Discrepancies & Quality Gaps Found</div>
+    <div class="notes-card">
+        @if ($audit->discrepancies_notes)
+            {{ $audit->discrepancies_notes }}
+        @else
+            <em style="color: #94a3b8;">No specific qualitative discrepancies or register gaps recorded.</em>
+        @endif
+    </div>
+
+    <div class="section-title">D. Actionable Recommendations & Agreed Next Steps</div>
     <div class="notes-card">
         @if ($audit->recommendations)
             {{ $audit->recommendations }}
@@ -420,7 +438,7 @@
     </div>
 
     @if ($audit->actionItems && $audit->actionItems->isNotEmpty())
-        <div class="section-title">C. Corrective & Preventive Action (CAPA) Plan</div>
+        <div class="section-title">E. Corrective & Preventive Action (CAPA) Plan</div>
         <table class="data-table" style="font-size: 9.5px; margin-bottom: 12px;">
             <thead>
                 <tr>
@@ -447,8 +465,36 @@
         </table>
     @endif
 
-    <div class="section-title">{{ ($audit->actionItems && $audit->actionItems->isNotEmpty()) ? 'D' : 'C' }}. Benchmark Legend & Grading Scale Reference</div>
-    <table style="width: 100%; border-collapse: collapse; font-size: 9px; margin-bottom: 20px;">
+    @if ($audit->certified_at || $audit->workflow_status === 'AUDIT_CLOSED')
+        <div style="margin-top: 14px; margin-bottom: 14px; padding: 12px 14px; background: #f0fdf4; border: 1.5px solid #22c55e; border-radius: 6px;">
+            <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                    <td style="width: 75%;">
+                        <div style="font-size: 11px; font-weight: 800; color: #15803d; text-transform: uppercase; letter-spacing: 0.5px;">
+                            &#10004; Formal MEAL Certification & Closure Endorsement
+                        </div>
+                        <div style="font-size: 9.5px; color: #166534; margin-top: 3px;">
+                            Certified By: <strong>{{ $audit->certifiedBy?->name ?? 'MEAL Officer' }}</strong> &bull;
+                            Timestamp: <strong>{{ $audit->certified_at?->format('F d, Y \a\t H:i') ?? now()->format('F d, Y') }}</strong>
+                        </div>
+                        @if ($audit->closure_notes)
+                            <div style="font-size: 9.5px; color: #334155; margin-top: 4px; font-style: italic;">
+                                "{{ $audit->closure_notes }}"
+                            </div>
+                        @endif
+                    </td>
+                    <td style="width: 25%; text-align: right;">
+                        <span style="display: inline-block; padding: 5px 12px; background: #16a34a; color: #ffffff; font-weight: 800; font-size: 10px; border-radius: 4px; text-transform: uppercase;">
+                            CERTIFIED
+                        </span>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    @endif
+
+    <div class="section-title">F. Benchmark Legend & Grading Scale Reference</div>
+    <table style="width: 100%; border-collapse: collapse; font-size: 9px; margin-bottom: 14px;">
         <tr>
             <td style="padding: 4px; width: 25%;">
                 <span class="status-pill GREEN" style="font-size: 8px;">GREEN</span> <strong>&ge; 85%</strong>: Good Quality
@@ -465,7 +511,7 @@
         </tr>
     </table>
 
-    <div class="section-title">D. Formal Verification & Sign-Off Block</div>
+    <div class="section-title">G. Field Verification & Sign-Off Block</div>
     <p style="font-size: 9.5px; color: #64748b; margin-top: 2px; margin-bottom: 12px;">
         By signing below, the lead auditor and facility representative certify that the sampled record counts, observations, and agreed next steps accurately reflect the on-site verification conducted.
     </p>

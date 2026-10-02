@@ -36,6 +36,32 @@ class ConsolidatedProjectView extends Page implements HasForms, HasTable
 
     protected static string $view = 'filament.pages.consolidated-project-view';
 
+    public static function canAccess(): bool
+    {
+        $user = auth()->user();
+        return $user && ($user->isMealOfficer() || $user->isProjectOfficer());
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        $user = auth()->user();
+        if ($user && $user->isProjectOfficer() && ! $user->isMealOfficer()) {
+            return 'Project Performance & Review';
+        }
+
+        return 'Consolidated Project View';
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        $user = auth()->user();
+        if ($user && $user->isProjectOfficer() && ! $user->isMealOfficer()) {
+            return 'My Project Operations';
+        }
+
+        return 'Program Management';
+    }
+
     public ?int $project_id = null;
     public ?int $period_year = null;
     public ?int $period_quarter = null;
@@ -43,7 +69,15 @@ class ConsolidatedProjectView extends Page implements HasForms, HasTable
 
     public function mount(): void
     {
-        $this->project_id = Project::where('is_active', true)->value('id');
+        $user = auth()->user();
+        if ($user && $user->isProjectOfficer() && ! $user->isMealOfficer()) {
+            $defaultProjectId = $user->managedProjects()->where('is_active', true)->value('id')
+                ?? Project::where('is_active', true)->value('id');
+        } else {
+            $defaultProjectId = Project::where('is_active', true)->value('id');
+        }
+
+        $this->project_id = $defaultProjectId;
         $this->form->fill([
             'project_id' => $this->project_id,
             'period_year' => null,
@@ -72,7 +106,14 @@ class ConsolidatedProjectView extends Page implements HasForms, HasTable
                     ->schema([
                         Forms\Components\Select::make('project_id')
                             ->label('Project')
-                            ->options(Project::where('is_active', true)->pluck('name', 'id'))
+                            ->options(function () {
+                                $user = auth()->user();
+                                $query = Project::where('is_active', true);
+                                if ($user && ! $user->isMealOfficer() && $user->isProjectOfficer()) {
+                                    $query->where('project_officer_id', $user->id);
+                                }
+                                return $query->pluck('name', 'id');
+                            })
                             ->required()
                             ->searchable()
                             ->live()

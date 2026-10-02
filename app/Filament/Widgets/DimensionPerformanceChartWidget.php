@@ -30,8 +30,23 @@ class DimensionPerformanceChartWidget extends ChartWidget
         $query = AuditDimension::query()
             ->join('audits', 'audits.id', '=', 'audit_dimensions.audit_id');
 
+        $user = auth()->user();
+        if ($user && ! $user->isMealOfficer() && $user->isProjectOfficer() && empty($filters['project_id'])) {
+            $managedProjectIds = $user->managedProjects()->pluck('id')->toArray();
+            $query->whereIn('audits.project_id', $managedProjectIds);
+        } elseif ($user && ! $user->isMealOfficer() && $user->isAuditor() && empty($filters['project_id'])) {
+            $query->where('audits.auditor_id', $user->id);
+        }
+
         if (!empty($filters['project_id'])) {
             $query->where('audits.project_id', $filters['project_id']);
+        }
+        if (!empty($filters['execution_status'])) {
+            if ($filters['execution_status'] === 'ASSIGNED') {
+                $query->whereIn('audits.workflow_status', [\App\Models\Audit::STATUS_ASSIGNED_TO_AUDITOR, \App\Models\Audit::STATUS_PENDING_ASSIGNMENT]);
+            } elseif ($filters['execution_status'] === 'DONE') {
+                $query->whereIn('audits.workflow_status', [\App\Models\Audit::STATUS_AUDIT_COMPLETED, \App\Models\Audit::STATUS_CAPA_SUBMITTED, \App\Models\Audit::STATUS_AUDIT_CLOSED]);
+            }
         }
         if (!empty($filters['period_year'])) {
             $query->where('audits.period_year', $filters['period_year']);

@@ -183,11 +183,23 @@ class DqaImprovementsTest extends TestCase
             ]);
         }
 
-        $user = User::factory()->create();
+        $user = User::factory()->create(['roles' => [User::ROLE_MEAL_OFFICER]]);
         $response = $this->actingAs($user)->get(route('filament.admin.pages.consolidated-project-view'));
         $response->assertSuccessful();
         $response->assertSee('Lusaka District - Site 1');
         $response->assertSee('Facility Longitudinal Quality Trajectory');
-        $response->assertSee('CAPA Action Plan Health');
+    }
+
+    public function test_capa_tasks_renders_top_kpi_cards_widget(): void
+    {
+        $user = User::factory()->create(['roles' => [User::ROLE_MEAL_OFFICER]]);
+        $this->actingAs($user);
+
+        \Livewire\Livewire::test(\App\Filament\Widgets\CapaOverviewStatsWidget::class)
+            ->assertSee('Total Actions')
+            ->assertSee('Resolved')
+            ->assertSee('In Progress')
+            ->assertSee('Open / Overdue');
     }
 }
+
